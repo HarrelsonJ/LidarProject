@@ -2,7 +2,6 @@ from homemade_lidar import LIDAR
 from stepper_motor import STEPPER
 import machine
 import utime
-import sys
 
 led = machine.Pin(25, machine.Pin.OUT)
 led.value(1)
@@ -14,8 +13,8 @@ i2c = machine.I2C(1, scl=machine.Pin(3), sda=machine.Pin(2))
 print("Initalizing Sensors")
 lidar = LIDAR(i2c, [6, 7, 8, 9])
 motor.enable(True)
-stdout_fileno = sys.stdout
-sys.stdout = open('output.txt', 'w')
+#f = open('output.txt', 'w')
+#f.write("Timestamp\tAngle 0\t Value 0\tAngle 1\t Value 1\tAngle 2\t Value 2\tAngle 3\t Value 3\n")
 print("Timestamp\tAngle 0\t Value 0\tAngle 1\t Value 1\tAngle 2\t Value 2\tAngle 3\t Value 3")
 while(True):
     try:
@@ -26,7 +25,6 @@ while(True):
     except KeyboardInterrupt:
         motor.enable(False)
         led.value(0)
-        sys.stdout.close()
-        sys.stdout = stdout_fileno
+        #f.close()
         print("Keyboard interupt detected. Stopping program")
         break

@@ -36,19 +36,12 @@ class STEPPER:
     def turn_to_angle(self, angle):
         self.enable(True)
         num_steps = int(angle / degrees_per_step)
-        # stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
-        stepper_profile = [2] * num_steps
-        stepper_profile[0] = 10
-        stepper_profile[num_steps - 1] = 10
-        stepper_profile[1] = 6
-        stepper_profile[num_steps - 2] = 6
-        stepper_profile[2] = 4
-        stepper_profile[num_steps - 3] = 4
+        stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
         for i in range(0, num_steps):
             self.step(stepper_profile[i])
         self.enable(False)
 
-    def turn_and_scan(self, angle, lidar:LIDAR): #lidar is type LIDAR
+    def turn_and_scan(self, angle, lidar:LIDAR, output = None): #lidar is type LIDAR
         #self.enable(True)
         num_steps = int(angle / degrees_per_step)
         # stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
@@ -62,10 +55,12 @@ class STEPPER:
         for i in range(0, num_steps):
             if i % 10 == 0:
                 sample = lidar.read(self.angle)
-                print("timestamp: {}\t{} {}\t{} {}\t{} {}\t{} {}\n".format(sample.time, sample.scans[0][0], sample.scans[0][1],
-                                                                                        sample.scans[1][0], sample.scans[1][1],
-                                                                                        sample.scans[2][0], sample.scans[2][1],
-                                                                                        sample.scans[3][0], sample.scans[3][1]))
+                data_out = "{}\t{} {}\t{} {}\t{} {}\t{} {}\n".format(sample.time, sample.scans[0][0], sample.scans[0][1],
+                        sample.scans[1][0], sample.scans[1][1], sample.scans[2][0], sample.scans[2][1], sample.scans[3][0], sample.scans[3][1])
+                if output == None:
+                    print(data_out)
+                else:
+                    output.write(data_out)
             self.step(stepper_profile[i])
         #self.enable(False)
 
