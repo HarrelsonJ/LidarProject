@@ -13,13 +13,14 @@ i2c = machine.I2C(1, scl=machine.Pin(3), sda=machine.Pin(2))
 print("Initalizing Sensors")
 lidar = LIDAR(i2c, [6, 7, 8, 9])
 motor.enable(True)
-for i in range(0, 10):
-    motor.set_reverse(False)
-    motor.turn_and_scan(90, lidar)
-    machine.lightsleep(500)
-    motor.set_reverse(True)
-    motor.turn_and_scan(90, lidar)
-    machine.lightsleep(500)
-
-motor.enable(False)
-led.value(0)
+while(True):
+    try:
+        motor.set_reverse(False)
+        motor.turn_and_scan(90, lidar)
+        motor.set_reverse(True)
+        motor.turn_and_scan(90, lidar)
+    except KeyboardInterrupt:
+        motor.enable(False)
+        led.value(0)
+        print("Keyboard interupt detected. Stopping program")
+        break

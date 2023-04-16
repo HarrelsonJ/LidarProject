@@ -2,7 +2,7 @@ from machine import Pin
 from homemade_lidar import LIDAR
 import utime
 
-degrees_per_step = 0.61 # Degrees / step
+degrees_per_step = 1.8 / 4# Degrees / step
 
 class STEPPER:
     def __init__(self, step_pin, dir_pin, sleep_pin, config_pin):
