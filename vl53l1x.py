@@ -98,6 +98,7 @@ VL51L1X_DEFAULT_CONFIGURATION = bytes([
 
 class VL53L1X:
     def __init__(self, i2c, address=0x29):
+        print("Initing sensor at address: " + str(address))
         self.i2c = i2c
         self.address = 0x29
         self.reset()

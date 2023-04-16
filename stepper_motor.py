@@ -1,5 +1,5 @@
 from machine import Pin
-from stepper_motor import STEPPER
+from homemade_lidar import LIDAR
 import utime
 
 degrees_per_step = 0.61 # Degrees / step
@@ -26,9 +26,10 @@ class STEPPER:
     
     def step(self, delay):
         self.pulse.value(1)
-        utime.sleep_ms(delay)
+        utime.sleep_ms(delay // 2)
         self.pulse.value(0)
-        utime.sleep_ms(delay)
+        utime.sleep_ms(delay // 2)
+        self.angle = self.angle - degrees_per_step if self.dir.value() == 1 else self.angle + degrees_per_step
         self.angle += degrees_per_step
         return self.angle
     
@@ -47,8 +48,8 @@ class STEPPER:
             self.step(stepper_profile[i])
         self.enable(False)
 
-    def turn_and_scan(self, angle, lidar): #lidar is type LIDAR
-        self.enable(True)
+    def turn_and_scan(self, angle, lidar:LIDAR): #lidar is type LIDAR
+        #self.enable(True)
         num_steps = int(angle / degrees_per_step)
         # stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
         stepper_profile = [2] * num_steps
@@ -60,13 +61,13 @@ class STEPPER:
         stepper_profile[num_steps - 3] = 4
         for i in range(0, num_steps):
             if i % 10 == 0:
-                sample = lidar.read()
-                print(sample.time + "\t" + sample.scans[0][0] + " " + sample.scans[0][1]
-                                  + "\t" + sample.scans[1][0] + " " + sample.scans[1][1]
-                                  + "\t" + sample.scans[2][0] + " " + sample.scans[2][1]
-                                  + "\t" + sample.scans[3][0] + " " + sample.scans[3][1])
+                sample = lidar.read(self.angle)
+                print("timestamp: {}\t{} {}\t{} {}\t{} {}\t{} {}\n".format(sample.time, sample.scans[0][0], sample.scans[0][1],
+                                                                                        sample.scans[1][0], sample.scans[1][1],
+                                                                                        sample.scans[2][0], sample.scans[2][1],
+                                                                                        sample.scans[3][0], sample.scans[3][1]))
             self.step(stepper_profile[i])
-        self.enable(False)
+        #self.enable(False)
 
     def generate_stepper_profile(self, num_steps, max, min, step_accel):
         stepper_profile = [min] * num_steps
