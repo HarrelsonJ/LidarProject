@@ -1,8 +1,8 @@
 from machine import Pin
-import machine
+from stepper_motor import STEPPER
 import utime
 
-degrees_per_step = 360 / 800 # Degrees / step
+degrees_per_step = 0.61 # Degrees / step
 
 class STEPPER:
     def __init__(self, step_pin, dir_pin, sleep_pin, config_pin):
@@ -35,27 +35,62 @@ class STEPPER:
     def turn_to_angle(self, angle):
         self.enable(True)
         num_steps = int(angle / degrees_per_step)
-        stepper_profile = self.generate_stepper_profile(num_steps, 50, 2, 5, 2)
+        # stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
+        stepper_profile = [2] * num_steps
+        stepper_profile[0] = 10
+        stepper_profile[num_steps - 1] = 10
+        stepper_profile[1] = 6
+        stepper_profile[num_steps - 2] = 6
+        stepper_profile[2] = 4
+        stepper_profile[num_steps - 3] = 4
         for i in range(0, num_steps):
             self.step(stepper_profile[i])
         self.enable(False)
 
-    def generate_stepper_profile(self, num_steps, max, min, max_step_accel, min_step_accel):
+    def turn_and_scan(self, angle, lidar): #lidar is type LIDAR
+        self.enable(True)
+        num_steps = int(angle / degrees_per_step)
+        # stepper_profile = self.generate_stepper_profile(num_steps, 10, 2, 3)
+        stepper_profile = [2] * num_steps
+        stepper_profile[0] = 10
+        stepper_profile[num_steps - 1] = 10
+        stepper_profile[1] = 6
+        stepper_profile[num_steps - 2] = 6
+        stepper_profile[2] = 4
+        stepper_profile[num_steps - 3] = 4
+        for i in range(0, num_steps):
+            if i % 10 == 0:
+                sample = lidar.read()
+                print(sample.time + "\t" + sample.scans[0][0] + " " + sample.scans[0][1]
+                                  + "\t" + sample.scans[1][0] + " " + sample.scans[1][1]
+                                  + "\t" + sample.scans[2][0] + " " + sample.scans[2][1]
+                                  + "\t" + sample.scans[3][0] + " " + sample.scans[3][1])
+            self.step(stepper_profile[i])
+        self.enable(False)
+
+    def generate_stepper_profile(self, num_steps, max, min, step_accel):
         stepper_profile = [min] * num_steps
-        i, j = max, 0
-        while(i > min):
-            stepper_profile[j] = i
-            stepper_profile[num_steps - 1 - j] = i
-            i -= max_step_accel
+        delay, index, sub_index = max, 0, 0
+        while(True):
+            stepper_profile[index] = delay
+            stepper_profile[num_steps - 1 - index] = delay
+
+            if delay <= min:
+                break
+            if(index == num_steps - 1 - index):
+                break
+
+            if(sub_index >= 2):
+                if (delay - step_accel < min):
+                    delay = min
+                else:
+                    delay = delay - step_accel
+                sub_index = 0
+
+            index += 1
+            sub_index += 1
+        output = ""
+        for i in range(0, num_steps):
+            output += str(stepper_profile[i]) + ", "
+        print(output)
         return stepper_profile
-
-
-motor = STEPPER(17,16,18,19)
-motor.enable(False)
-for i in range(0, 10):
-    motor.set_reverse(False)
-    motor.turn_to_angle(90)
-    utime.sleep_ms(500)
-    motor.set_reverse(True)
-    motor.turn_to_angle(90)
-    utime.sleep(1)

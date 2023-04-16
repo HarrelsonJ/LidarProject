@@ -1,67 +1,38 @@
 from vl53l1x import VL53L1X
+from laser_scan import SCAN
 import machine
-
-pin0 = machine.Pin(0, machine.Pin.OUT, machine.Pin.PULL_UP)
-pin1 = machine.Pin(1, machine.Pin.OUT, machine.Pin.PULL_UP)
-pin2 = machine.Pin(2, machine.Pin.OUT, machine.Pin.PULL_UP)
-pin3 = machine.Pin(3, machine.Pin.OUT, machine.Pin.PULL_UP)
-
-# Shutdown pins for vl53l1x active on low
-# Bring low to reset all boards
-
-print("Bring xshut pins low")
-pin0.value(0)
-pin1.value(0)
-pin2.value(0)
-pin3.value(0)
-
-# Configure the i2c bus
-print("Configure the i2c bus")
-i2c = machine.I2C(0, scl=machine.Pin(17), sda=machine.Pin(16))
-
-# Enable first device
-print("Enable and configure device 0")
-pin0.value(1)
-machine.lightsleep(10) # Wait for the board to boot
-sensor0 = VL53L1X(i2c)
-
-print("Change I2C address for device 0")
-sensor0.set_i2c_address(30)
+import utime
 
 
-# Enable second device
-print("Enable and configure device 1")
-pin1.value(1)
-machine.lightsleep(10) # Wait for the board to boot
-sensor1 = VL53L1X(i2c)
+class LIDAR:
+    def __init__(self, i2c, shut_pins, angle_offsets = [0, 90, 180, 270]) -> None:
+        # Store the i2c bus
+        self.i2c = i2c
+        self.shut_pins = []
+        for shut_pin in shut_pins:
+            self.shut_pins.append(machine.Pin(shut_pin, machine.Pin.OUT, machine.Pin.PULL_UP))
 
-print("Change I2C address for device 1")
-sensor1.set_i2c_address(31)
+        self.sensors = []
+        self.offsets = angle_offsets
 
-# Enable third device
-print("Enable and configure device 2")
-pin2.value(1)
-machine.lightsleep(10) # Wait for the board to boot
-sensor2 = VL53L1X(i2c)
+        # Shutdown pins for vl53l1x active on low
+        # Bring low to reset all boards
 
-print("Change I2C address for device 2")
-sensor2.set_i2c_address(32)
+        print("Bring xshut pins low")
+        for shut_pin in self.shut_pins:
+            shut_pin.value(0)
+
+        for index, shut_pin in enumerate(self.shut_pins):
+            print("Enable and configure device " + str(index))
+            shut_pin.value(1) # Bring the xshut pin high
+            utime.sleep_ms(10) # Wait for the board to boot
+            self.sensors[index] = VL53L1X(i2c)
+            self.sensors[index].set_i2c_address(30)
 
 
-# Enable fourth device
-print("Enable and configure device 3")
-pin3.value(1)
-machine.lightsleep(10) # Wait for the board to boot
-sensor3 = VL53L1X(i2c)
-
-print("Change I2C address for device 3")
-sensor3.set_i2c_address(33)
-
-print("Begin Loop")
-while(True):
-    print("Sensor0: " + str(sensor0.read()) + "\n")
-    print("Sensor1: " + str(sensor1.read()) + "\n")
-    print("Sensor2: " + str(sensor2.read()) + "\n")
-    print("Sensor3: " + str(sensor3.read()) + "\n")
-    machine.lightsleep(2000)
-
+    def read(self, angle) -> SCAN:
+        time = utime.time()
+        data = []
+        for index, sensor in enumerate(self.sensors):
+            data[index] = [(self.offsets[index] + self.offsets) % 360,sensor.read()] # Add in angle data from stepper
+        return SCAN(time, *data)
